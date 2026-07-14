@@ -22,6 +22,18 @@ class PlanningCenterAPI(Protocol):
         """Get upcoming plans for the service type."""
         ...
 
+    async def get_plan_items(self, service_type_id: str, plan_id: str) -> List[str]:
+        """Fetch service items (run-sheet) for a plan."""
+        ...
+
+    async def get_plan_times(self, service_type_id: str, plan_id: str) -> Dict[str, str]:
+        """Fetch plan times (e.g. Sat 5:00 PM) for a plan."""
+        ...
+
+    async def get_plan_team_members(self, service_type_id: str, plan_id: str) -> List[Dict[str, Any]]:
+        """Fetch detailed team rosters for a plan."""
+        ...
+
     async def update_roster_status(self, plan_id: str, person_id: str, status: str) -> bool:
         """Update person status (e.g. Confirmed/Declined)."""
         ...

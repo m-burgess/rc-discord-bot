@@ -45,6 +45,7 @@ class RCBot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
         intents.message_content = True
+        intents.members = True
         
         super().__init__(
             command_prefix="!",
@@ -79,12 +80,18 @@ class RCBot(commands.Bot):
         except Exception as e:
             logger.error(f"Failed to sync command tree: {e}")
 
-# Helper to run the bot
 def main():
     if not config.discord_token or config.discord_token == "MOCK_DISCORD_TOKEN":
         logger.warning("No valid DISCORD_TOKEN is set in the environment. Running in mock/dry-run mode is advised.")
+    
     bot = RCBot()
-    # In a real environment, you'd call bot.run(config.discord_token)
+    
+    if config.discord_token and config.discord_token != "MOCK_DISCORD_TOKEN":
+        logger.info("Starting Discord bot...")
+        bot.run(config.discord_token)
+    else:
+        logger.error("Cannot start bot without a valid Discord token.")
+    
     return bot
 
 if __name__ == "__main__":

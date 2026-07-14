@@ -20,79 +20,206 @@ class PCOAsyncClient(PlanningCenterAPI):
 
     async def get_checkins(self, date_str: str) -> List[CheckIn]:
         if self.is_mock:
-            logger.info("PCO: returning mocked check-ins list.")
-            return [
-                CheckIn(
-                    id="mock-ci-1",
-                    person=Person(id="person-1", first_name="John", last_name="Doe", discord_id="1234567890"),
-                    checked_in_at=datetime.utcnow(),
-                    location="Sanctuary Main Lobby"
-                ),
-                CheckIn(
-                    id="mock-ci-2",
-                    person=Person(id="person-2", first_name="Jane", last_name="Smith", discord_id="0987654321"),
-                    checked_in_at=datetime.utcnow(),
-                    location="Children's Check-In"
-                )
-            ]
+            logger.warning("PCO: using MOCK check-ins.")
+            return []
 
-        url = f"https://api.planningcenteronline.com/check-ins/v2/check_ins?filter=date&date={date_str}"
+        url = f"https://api.planningcenteronline.com/check-ins/v2/check_ins?include=person&filter=date&date={date_str}"
         async with aiohttp.ClientSession() as session:
             async with session.get(url, auth=self._get_auth()) as response:
                 if response.status != 200:
-                    logger.error(f"PCO API error: status code {response.status}")
+                    logger.error(f"PCO API error on get_checkins: status code {response.status}")
                     return []
+                
                 data = await response.json()
-                # Parse to entities...
+                
+                # Parse included persons
+                included = data.get("included", [])
+                people_map = {}
+                for inc in included:
+                    if inc.get("type") == "Person":
+                        people_map[inc.get("id")] = inc.get("attributes", {})
+
                 checkins = []
                 for item in data.get("data", []):
-                    # Simplified parsing
-                    person_attribs = item.get("attributes", {})
+                    rel = item.get("relationships", {})
+                    person_id = rel.get("person", {}).get("data", {}).get("id")
+                    
+                    p_attrs = people_map.get(person_id, {})
+                    first_name = p_attrs.get("first_name", "Unknown")
+                    last_name = p_attrs.get("last_name", "Unknown")
+                    
+                    created_at = item.get("attributes", {}).get("created_at")
+                    dt = datetime.utcnow()
+                    if created_at:
+                        try:
+                            dt = datetime.strptime(created_at[:19], "%Y-%m-%dT%H:%M:%S")
+                        except Exception:
+                            pass
+
                     checkins.append(
                         CheckIn(
                             id=item.get("id"),
-                            person=Person(id="pco-p-id", first_name="PCO", last_name="User"),
-                            checked_in_at=datetime.utcnow(),
-                            location="Sanctuary"
+                            person=Person(id=person_id or "unknown", first_name=first_name, last_name=last_name),
+                            checked_in_at=dt,
+                            location="Checked In"
                         )
                     )
                 return checkins
 
     async def get_people_by_team(self, team_id: str) -> List[Person]:
         if self.is_mock:
-            return [
-                Person(id="vol-1", first_name="Aiden", last_name="Pastor", discord_id="111111"),
-                Person(id="vol-2", first_name="Sarah", last_name="Singer", discord_id="222222")
-            ]
-        # Real PCO implementation...
-        return []
+            return []
+            
+        url = f"https://api.planningcenteronline.com/services/v2/teams/{team_id}/people"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, auth=self._get_auth()) as response:
+                if response.status != 200:
+                    logger.error(f"PCO API error on get_people_by_team: status code {response.status}")
+                    return []
+                data = await response.json()
+                people = []
+                for item in data.get("data", []):
+                    attrs = item.get("attributes", {})
+                    people.append(Person(
+                        id=item.get("id"),
+                        first_name=attrs.get("first_name", "Unknown"),
+                        last_name=attrs.get("last_name", "Unknown")
+                    ))
+                return people
 
     async def check_in_person(self, person_id: str, location_id: str) -> bool:
         if self.is_mock:
-            logger.info(f"Mock Check-In successful for Person {person_id} at Location {location_id}.")
             return True
-        return False
+            
+        url = "https://api.planningcenteronline.com/check-ins/v2/check_ins"
+        payload = {
+            "data": {
+                "type": "CheckIn",
+                "attributes": {},
+                "relationships": {
+                    "person": {"data": {"type": "Person", "id": person_id}},
+                    "location": {"data": {"type": "Location", "id": location_id}}
+                }
+            }
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload, auth=self._get_auth()) as response:
+                if response.status in [200, 201]:
+                    return True
+                logger.error(f"Failed to check in: {response.status}")
+                return False
 
     async def check_out_person(self, checkin_id: str) -> bool:
         if self.is_mock:
-            logger.info(f"Mock Check-Out successful for Checkin {checkin_id}.")
             return True
-        return False
+        return False # Real checkout is complex in PCO
 
     async def get_upcoming_plans(self, service_type_id: str) -> List[Dict[str, Any]]:
         if self.is_mock:
-            return [
-                {
-                    "id": "plan-101",
-                    "title": "Sunday Worship Service",
-                    "date": "2026-07-19",
-                    "teams": [
-                        {"id": "team-audio", "name": "Audio Visual Team", "status": "Confirmed"},
-                        {"id": "team-host", "name": "Host Team", "status": "Unconfirmed"}
-                    ]
-                }
-            ]
-        return []
+            return []
+            
+        url = f"https://api.planningcenteronline.com/services/v2/service_types/{service_type_id}/plans?filter=future"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, auth=self._get_auth()) as response:
+                if response.status != 200:
+                    logger.error(f"PCO API error on get_upcoming_plans: status code {response.status}")
+                    return []
+                data = await response.json()
+                plans = []
+                for item in data.get("data", []):
+                    attrs = item.get("attributes", {})
+                    plans.append({
+                        "id": item.get("id"),
+                        "title": attrs.get("title") or attrs.get("dates", "Unknown Date"),
+                        "date": attrs.get("sort_date", ""),
+                        "teams": []
+                    })
+                return plans
+
+    async def get_plan_items(self, service_type_id: str, plan_id: str) -> List[str]:
+        if self.is_mock:
+            return []
+            
+        url = f"https://api.planningcenteronline.com/services/v2/service_types/{service_type_id}/plans/{plan_id}/items"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, auth=self._get_auth()) as response:
+                if response.status != 200:
+                    logger.error(f"PCO API error on get_plan_items: status code {response.status}")
+                    return []
+                data = await response.json()
+                items = []
+                for item in data.get("data", []):
+                    title = item.get("attributes", {}).get("title")
+                    if title:
+                        items.append(title)
+                return items
+
+    async def get_plan_times(self, service_type_id: str, plan_id: str) -> Dict[str, str]:
+        if self.is_mock:
+            return {}
+            
+        url = f"https://api.planningcenteronline.com/services/v2/service_types/{service_type_id}/plans/{plan_id}/plan_times"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, auth=self._get_auth()) as response:
+                if response.status != 200:
+                    return {}
+                data = await response.json()
+                
+                times_map = {}
+                for item in data.get("data", []):
+                    attrs = item.get("attributes", {})
+                    # Format time as 'Saturday 5:00 PM' etc
+                    from datetime import datetime
+                    import zoneinfo
+                    dt_str = attrs.get("starts_at")
+                    if dt_str:
+                        # PCO returns ISO format e.g. 2026-07-18T22:00:00Z
+                        dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
+                        # Convert to central time (or local time)
+                        local_tz = zoneinfo.ZoneInfo("America/Chicago")
+                        dt_local = dt.astimezone(local_tz)
+                        # Format example: 'Sat 5:00 PM'
+                        formatted = dt_local.strftime('%a %I:%M %p').lstrip('0').replace(' 0', ' ')
+                        times_map[item["id"]] = formatted
+                    else:
+                        times_map[item["id"]] = "Unknown Time"
+                return times_map
+
+    async def get_plan_team_members(self, service_type_id: str, plan_id: str) -> List[Dict[str, Any]]:
+        if self.is_mock:
+            return []
+            
+        url = f"https://api.planningcenteronline.com/services/v2/service_types/{service_type_id}/plans/{plan_id}/team_members?include=team"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, auth=self._get_auth()) as response:
+                if response.status != 200:
+                    logger.error(f"PCO API error on get_plan_team_members: status code {response.status}")
+                    return []
+                data = await response.json()
+                
+                # Build team map from included data
+                teams_map = {}
+                for inc in data.get("included", []):
+                    if inc.get("type") == "Team":
+                        teams_map[inc.get("id")] = inc.get("attributes", {}).get("name", "Unknown Team")
+                        
+                members = []
+                for item in data.get("data", []):
+                    attrs = item.get("attributes", {})
+                    rel = item.get("relationships", {})
+                    team_id = rel.get("team", {}).get("data", {}).get("id")
+                    team_name = teams_map.get(team_id, "Unknown Team")
+                    
+                    time_ids = [t.get("id") for t in rel.get("service_times", {}).get("data", [])]
+                    
+                    members.append({
+                        "name": attrs.get("name", "Unknown Person"),
+                        "position": attrs.get("team_position_name", "Unknown Position"),
+                        "status": attrs.get("status", "U"),
+                        "team_name": team_name,
+                        "time_ids": time_ids
+                    })
+                return members
 
     async def update_roster_status(self, plan_id: str, person_id: str, status: str) -> bool:
         if self.is_mock:
@@ -101,9 +228,5 @@ class PCOAsyncClient(PlanningCenterAPI):
 
     async def trigger_autoschedule(self, plan_id: str, team_id: str) -> List[Person]:
         if self.is_mock:
-            logger.info(f"Mock Trigger Auto-schedule for Plan {plan_id}, Team {team_id}")
-            return [
-                Person(id="auto-vol-1", first_name="Robert", last_name="Reader", discord_id="333333"),
-                Person(id="auto-vol-2", first_name="Emily", last_name="Editor", discord_id="444444")
-            ]
+            return []
         return []

@@ -54,18 +54,18 @@ class AppConfig:
                 if not key or not secret_id:
                     continue
                     
-                if key == "Discord Secret":
+                if key == "Discord Token":
                     secret_val = client.secrets().get(secret_id)
                     self.discord_token = getattr(secret_val.data, "value", "")
-                    logger.info("Retrieved Discord Secret (token) from Bitwarden.")
+                    logger.info("Retrieved Discord Token from Bitwarden.")
                 elif key == "Planning Center Client ID":
                     secret_val = client.secrets().get(secret_id)
                     self.pco_app_id = getattr(secret_val.data, "value", "")
                     logger.info("Retrieved Planning Center Client ID from Bitwarden.")
-                elif key == "Planning Center secret":
+                elif key == "Planning Center Token":
                     secret_val = client.secrets().get(secret_id)
                     self.pco_secret = getattr(secret_val.data, "value", "")
-                    logger.info("Retrieved Planning Center secret from Bitwarden.")
+                    logger.info("Retrieved Planning Center Token from Bitwarden.")
                     
             logger.info("Bitwarden Secrets integration completed.")
         except Exception as e:
