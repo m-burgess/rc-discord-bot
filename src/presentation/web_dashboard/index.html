@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RC Bot - Sanctuary Logistics Map</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #151d30;
+            --accent-glow: rgba(59, 130, 246, 0.15);
+            --seat-free: #10b981;
+            --seat-occupied: #ef4444;
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Outfit', -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin: 0;
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        .dashboard {
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px var(--accent-glow);
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-val {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3b82f6;
+            margin-top: 8px;
+        }
+
+        .stage-banner {
+            width: 100%;
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.05));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            text-align: center;
+            padding: 10px 0;
+            border-radius: 8px;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #60a5fa;
+            margin-bottom: 40px;
+        }
+
+        .seating-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .seat {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            background-color: var(--seat-free);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .seat:hover {
+            transform: scale(1.15);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+
+        .seat.occupied {
+            background-color: var(--seat-occupied);
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .color-free { background-color: var(--seat-free); }
+        .color-occupied { background-color: var(--seat-occupied); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Sanctuary Logistics Seating</h1>
+        <p>Real-time seating map and occupancy monitor</p>
+    </div>
+
+    <div class="dashboard">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div>Total Seats</div>
+                <div class="stat-val" id="total-seats">100</div>
+            </div>
+            <div class="stat-card">
+                <div>Occupied Seats</div>
+                <div class="stat-val" id="occupied-seats">0</div>
+            </div>
+            <div class="stat-card">
+                <div>Capacity Percentage</div>
+                <div class="stat-val" id="capacity-pct">0%</div>
+            </div>
+        </div>
+
+        <div class="stage-banner">STAGE</div>
+
+        <div class="seating-grid" id="grid">
+            <!-- Dynamically populated seats -->
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color color-free"></div>
+                <span>Free Seat</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color color-occupied"></div>
+                <span>Occupied Seat</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const totalSeats = 100;
+        let occupiedCount = 0;
+        const grid = document.getElementById("grid");
+
+        // Seed 100 seats
+        for (let i = 1; i <= totalSeats; i++) {
+            const seat = document.createElement("button");
+            seat.className = "seat";
+            seat.innerText = i;
+            seat.id = `seat-${i}`;
+            
+            seat.addEventListener("click", () => {
+                const isOccupied = seat.classList.toggle("occupied");
+                if (isOccupied) {
+                    occupiedCount++;
+                } else {
+                    occupiedCount--;
+                }
+                updateDashboard();
+                
+                // Trigger backend webhook or local HTTP update if fully integrated
+                fetch(`/api/update_seat?id=${i}&occupied=${isOccupied}`).catch(e => {
+                    // Ignore offline API errors in simulation mode
+                });
+            });
+            grid.appendChild(seat);
+        }
+
+        function updateDashboard() {
+            document.getElementById("occupied-seats").innerText = occupiedCount;
+            const pct = Math.round((occupiedCount / totalSeats) * 100);
+            document.getElementById("capacity-pct").innerText = `${pct}%`;
+        }
+    </script>
+</body>
+</html>
