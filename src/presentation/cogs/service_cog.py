@@ -66,5 +66,56 @@ class ServiceCog(commands.Cog):
         message_content = view.format_message(counts)
         await interaction.response.send_message(content=message_content, view=view)
 
+    @app_commands.command(name="how-does-this-work", description="Admin overview of the RC Bot architecture, hosting, and services.")
+    @app_commands.default_permissions(administrator=True)
+    async def how_does_this_work(self, interaction: discord.Interaction):
+        info_text = (
+            "🤖 **RC Bot System Overview & Architecture**\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "🖥️ **Hosting Environment:**\n"
+            "• Running locally on the **Church Office Computer** (Linux environment).\n"
+            "• Managed asynchronously with SQLite persistence for state & reminders.\n\n"
+            "🛠️ **Core Technologies & Architecture:**\n"
+            "• **Framework:** Built using Python `discord.py` with Clean Architecture.\n"
+            "• **Security:** Integrates with **Bitwarden Secrets Manager** for safe runtime credential loading.\n\n"
+            "🔌 **Connected Tech Services & Integrations:**\n"
+            "• 📋 **Planning Center Services & People:**\n"
+            "  - Automated weekly schedule reminders & roster lookups.\n"
+            "  - Dynamic Discord user mentions for scheduled volunteers.\n"
+            "  - Church Center household registration form integration.\n"
+            "• 🎛️ **Production Hardware Controls:**\n"
+            "  - **Behringer WING** (OSC / UDP Control)\n"
+            "  - **Blackmagic ATEM Switcher** (Network API)\n"
+            "  - **Blackmagic Cameras** (IP Control)\n"
+            "• ⏰ **Automated Background Scheduler:**\n"
+            "  - Continuously checks SQLite schedule rules to auto-broadcast team rosters to mapped channel chats (`#rc-tech-booth`, `#rc-worship`, `#rc-coffee-bar`, etc.)."
+        )
+        await interaction.response.send_message(info_text, ephemeral=True)
+
+    @app_commands.command(name="how-to-create-new-command", description="Step-by-step developer guide for adding new commands/features to RC Bot.")
+    @app_commands.default_permissions(administrator=True)
+    async def how_to_create_new_command(self, interaction: discord.Interaction):
+        guide_text = (
+            "🛠️ **Guide: How to Add a New Command to RC Bot**\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "1️⃣ **Locate the Right Cog:**\n"
+            "• Open `src/presentation/cogs/` on the office computer.\n"
+            "• Pick an existing file (e.g. `service_cog.py`, `roster_cog.py`) or create a new `*_cog.py`.\n\n"
+            "2️⃣ **Write the Slash Command:**\n"
+            "```python\n"
+            "@app_commands.command(name=\"my-command\", description=\"Description\")\n"
+            "@app_commands.default_permissions(administrator=True) # Optional\n"
+            "async def my_command(self, interaction: discord.Interaction):\n"
+            "    await interaction.response.send_message(\"Hello World!\", ephemeral=True)\n"
+            "```\n\n"
+            "3️⃣ **Register New Cog (If New File):**\n"
+            "• Open `src/presentation/bot.py` and add `\"src.presentation.cogs.new_cog\"` to the `cogs` list in `setup_hook()`.\n\n"
+            "4️⃣ **Restart Bot & Sync Commands:**\n"
+            "• Restart the bot script (`python src/presentation/bot.py`).\n"
+            "• Type `!sync` in Discord to force an instant command synchronization to your server!\n\n"
+            "💡 *Architecture Note: Use `src/domain/` for business logic, `src/infrastructure/` for APIs/DB, and `src/presentation/cogs/` for Discord UI.*"
+        )
+        await interaction.response.send_message(guide_text, ephemeral=True)
+
 async def setup(bot):
     await bot.add_cog(ServiceCog(bot))
