@@ -19,7 +19,7 @@ class AppConfig:
         self.discord_token = os.getenv("DISCORD_TOKEN", "")
         self.pco_app_id = os.getenv("PC_APP_ID", "")
         self.pco_secret = os.getenv("PC_SECRET", "")
-        self.pco_form_url = os.getenv("PLANNING_CENTER_FORM_URL", "https://people.planningcenteronline.com/forms")
+        self.pco_form_url = os.getenv("PLANNING_CENTER_FORM_URL", "https://rcpeoria.churchcenter.com/people/forms/1098233")
         
         self.wing_ip = os.getenv("BEHRINGER_WING_IP", "127.0.0.1")
         self.wing_port = int(os.getenv("BEHRINGER_WING_PORT", "2223"))
