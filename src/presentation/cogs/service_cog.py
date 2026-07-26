@@ -72,9 +72,10 @@ class ServiceCog(commands.Cog):
         info_text = (
             "🤖 **RC Bot System Overview & Architecture**\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "🖥️ **Hosting Environment:**\n"
+            "🖥️ **Hosting & Deployment:**\n"
             "• Running locally on the **Church Office Computer** (Linux environment).\n"
-            "• Managed asynchronously with SQLite persistence for state & reminders.\n\n"
+            "• Managed in a synced office folder. Deploying updates is as simple as updating the project directory or pulling from GitHub.\n"
+            "• **Public Codebase:** <https://github.com/m-burgess/rc-discord-bot>\n\n"
             "🛠️ **Core Technologies & Architecture:**\n"
             "• **Framework:** Built using Python `discord.py` with Clean Architecture.\n"
             "• **Security:** Integrates with **Bitwarden Secrets Manager** for safe runtime credential loading.\n\n"
