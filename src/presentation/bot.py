@@ -56,13 +56,13 @@ class RCBot(commands.Bot):
         self.db_logger = db_logger
 
     async def setup_hook(self) -> None:
-        # Load Cogs
         cogs = [
             "src.presentation.cogs.checkin_cog",
             "src.presentation.cogs.service_cog",
             "src.presentation.cogs.roster_cog",
             "src.presentation.cogs.event_cog",
-            "src.presentation.cogs.hardware_cog"
+            "src.presentation.cogs.hardware_cog",
+            "src.presentation.cogs.reminder_cog"
         ]
         for cog in cogs:
             try:
@@ -70,6 +70,17 @@ class RCBot(commands.Bot):
                 logger.info(f"Loaded extension: {cog}")
             except Exception as e:
                 logger.exception(f"Failed to load extension {cog}: {e}")
+
+    async def on_message(self, message: discord.Message):
+        # Allow prefix commands to run
+        if message.content.startswith("!sync") and message.author.guild_permissions.administrator:
+            try:
+                self.tree.copy_global_to(guild=message.guild)
+                synced = await self.tree.sync(guild=message.guild)
+                await message.channel.send(f"✅ Force-synced {len(synced)} commands to this server instantly!")
+            except Exception as e:
+                await message.channel.send(f"Failed to sync: {e}")
+        await super().on_message(message)
 
     async def on_ready(self):
         logger.info(f"Logged in as {self.user.name} ({self.user.id})")

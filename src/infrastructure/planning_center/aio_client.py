@@ -140,25 +140,28 @@ class PCOAsyncClient(PlanningCenterAPI):
         if self.is_mock:
             return []
             
-        url = f"https://api.planningcenteronline.com/services/v2/service_types/{service_type_id}/plans/{plan_id}/items"
+        url = f"https://api.planningcenteronline.com/services/v2/service_types/{service_type_id}/plans/{plan_id}/items?per_page=100"
+        items = []
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, auth=self._get_auth()) as response:
-                if response.status != 200:
-                    logger.error(f"PCO API error on get_plan_items: status code {response.status}")
-                    return []
-                data = await response.json()
-                items = []
-                for item in data.get("data", []):
-                    title = item.get("attributes", {}).get("title")
-                    if title:
-                        items.append(title)
-                return items
+            next_url = url
+            while next_url:
+                async with session.get(next_url, auth=self._get_auth()) as response:
+                    if response.status != 200:
+                        logger.error(f"PCO API error on get_plan_items: status code {response.status}")
+                        break
+                    data = await response.json()
+                    for item in data.get("data", []):
+                        title = item.get("attributes", {}).get("title")
+                        if title:
+                            items.append(title)
+                    next_url = data.get("links", {}).get("next")
+        return items
 
     async def get_plan_times(self, service_type_id: str, plan_id: str) -> Dict[str, str]:
         if self.is_mock:
             return {}
             
-        url = f"https://api.planningcenteronline.com/services/v2/service_types/{service_type_id}/plans/{plan_id}/plan_times"
+        url = f"https://api.planningcenteronline.com/services/v2/service_types/{service_type_id}/plans/{plan_id}/plan_times?per_page=100"
         async with aiohttp.ClientSession() as session:
             async with session.get(url, auth=self._get_auth()) as response:
                 if response.status != 200:
@@ -189,37 +192,42 @@ class PCOAsyncClient(PlanningCenterAPI):
         if self.is_mock:
             return []
             
-        url = f"https://api.planningcenteronline.com/services/v2/service_types/{service_type_id}/plans/{plan_id}/team_members?include=team"
+        url = f"https://api.planningcenteronline.com/services/v2/service_types/{service_type_id}/plans/{plan_id}/team_members?include=team&per_page=100"
+        members = []
+        teams_map = {}
+
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, auth=self._get_auth()) as response:
-                if response.status != 200:
-                    logger.error(f"PCO API error on get_plan_team_members: status code {response.status}")
-                    return []
-                data = await response.json()
-                
-                # Build team map from included data
-                teams_map = {}
-                for inc in data.get("included", []):
-                    if inc.get("type") == "Team":
-                        teams_map[inc.get("id")] = inc.get("attributes", {}).get("name", "Unknown Team")
+            next_url = url
+            while next_url:
+                async with session.get(next_url, auth=self._get_auth()) as response:
+                    if response.status != 200:
+                        logger.error(f"PCO API error on get_plan_team_members: status code {response.status}")
+                        break
+                    data = await response.json()
+                    
+                    # Build team map from included data
+                    for inc in data.get("included", []):
+                        if inc.get("type") == "Team":
+                            teams_map[inc.get("id")] = inc.get("attributes", {}).get("name", "Unknown Team")
+                            
+                    for item in data.get("data", []):
+                        attrs = item.get("attributes", {})
+                        rel = item.get("relationships", {})
+                        team_id = rel.get("team", {}).get("data", {}).get("id")
+                        team_name = teams_map.get(team_id, "Unknown Team")
                         
-                members = []
-                for item in data.get("data", []):
-                    attrs = item.get("attributes", {})
-                    rel = item.get("relationships", {})
-                    team_id = rel.get("team", {}).get("data", {}).get("id")
-                    team_name = teams_map.get(team_id, "Unknown Team")
+                        time_ids = [t.get("id") for t in rel.get("service_times", {}).get("data", [])]
+                        
+                        members.append({
+                            "name": attrs.get("name", "Unknown Person"),
+                            "position": attrs.get("team_position_name", "Unknown Position"),
+                            "status": attrs.get("status", "U"),
+                            "team_name": team_name,
+                            "time_ids": time_ids
+                        })
                     
-                    time_ids = [t.get("id") for t in rel.get("service_times", {}).get("data", [])]
-                    
-                    members.append({
-                        "name": attrs.get("name", "Unknown Person"),
-                        "position": attrs.get("team_position_name", "Unknown Position"),
-                        "status": attrs.get("status", "U"),
-                        "team_name": team_name,
-                        "time_ids": time_ids
-                    })
-                return members
+                    next_url = data.get("links", {}).get("next")
+        return members
 
     async def update_roster_status(self, plan_id: str, person_id: str, status: str) -> bool:
         if self.is_mock:

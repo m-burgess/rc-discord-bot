@@ -92,6 +92,18 @@ class SQLiteStateManager(DatabaseAPI):
                 # Fallback if FTS5 is not compiled in this Python environment's sqlite3 binary
                 pass
 
+            # Create reminders table
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS reminders (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    guild_id TEXT NOT NULL,
+                    service_type_id TEXT NOT NULL,
+                    day_of_week INTEGER NOT NULL,
+                    hour INTEGER NOT NULL,
+                    minute INTEGER NOT NULL
+                )
+            """)
+
             conn.commit()
 
     def get_headcount(self) -> Headcount:
@@ -194,3 +206,29 @@ class SQLiteStateManager(DatabaseAPI):
             for row in cursor.fetchall():
                 results.append(dict(row))
         return results
+
+    def set_reminder(self, guild_id: str, service_type_id: str, day_of_week: int, hour: int, minute: int) -> int:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO reminders (guild_id, service_type_id, day_of_week, hour, minute)
+                VALUES (?, ?, ?, ?, ?)
+            """, (guild_id, service_type_id, day_of_week, hour, minute))
+            conn.commit()
+            return cursor.lastrowid
+
+    def get_all_reminders(self) -> List[Dict[str, Any]]:
+        results = []
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, guild_id, service_type_id, day_of_week, hour, minute FROM reminders")
+            for row in cursor.fetchall():
+                results.append(dict(row))
+        return results
+
+    def delete_reminder(self, reminder_id: int) -> bool:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM reminders WHERE id = ?", (reminder_id,))
+            conn.commit()
+            return cursor.rowcount > 0

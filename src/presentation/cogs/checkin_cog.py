@@ -32,5 +32,14 @@ class CheckInCog(commands.Cog):
         else:
             await interaction.followup.send(f"❌ Failed to check out ID `{checkin_id}`.")
 
+    @app_commands.command(name="household_form", description="Get the link to the Planning Center form to add or update households.")
+    async def household_form(self, interaction: discord.Interaction):
+        await interaction.response.send_message(
+            f"📋 **Planning Center Household Form**\n"
+            f"Please click the link below to add a new household or edit family details directly in Planning Center:\n"
+            f"🔗 <{config.pco_form_url}>",
+            ephemeral=True
+        )
+
 async def setup(bot):
     await bot.add_cog(CheckInCog(bot))

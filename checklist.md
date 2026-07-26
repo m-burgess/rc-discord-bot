@@ -14,6 +14,8 @@
 - [x] UI/UX: Interactive multi-team select dropdown menu for roster views
 - [x] UI/UX: Dynamic timezone conversions (UTC to US Central)
 - [x] Implement auto-reschedule slash commands for absent team members
+- [x] Automated weekly schedule reminders with persistence and channel team mapping
+- [x] Planning Center People household form integration (`/household_form`)
 
 ## Phase 3: Hardware Integration
 - [ ] Connect and test Behringer WING integration over local network
