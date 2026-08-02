@@ -24,6 +24,6 @@
 - [ ] Verify local network routing, security, and latency at the church location
 
 ## Phase 4: Production Readiness & Maintenance
-- [ ] Setup long-term production deployment (e.g., `systemd` Linux service)
+- [x] Setup long-term production deployment (`systemd` Linux service with auto-restart & linger)
 - [ ] Complete comprehensive documentation (README, architecture overview)
 - [ ] Finalize persistent error handling and SQLite database logging
