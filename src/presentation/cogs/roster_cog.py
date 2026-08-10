@@ -77,7 +77,7 @@ CHANNEL_TEAM_MAP = {
     "rc-usher-team": ["Ushers", "Usher"],
     "rc-offering-count": ["Offering Count", "Offering Counter", "Offering Counters", "Offering"],
     "rc-parking-team": ["Parking Team", "Parking"],
-    "rc-kids-team": ["RC Kids", "Kids", "Babies", "Toddlers", "Nursery", "Pre-K", "Elementary", "Fuse"]
+    "rc-kids-team": ["RC Kids", "Kids", "RC Babies team", "RC Babies", "RC Toddlers Team", "RC Toddlers", "RC Pre-school Team", "RC Pre-school", "Pre-school", "Fuse Team", "Fuse", "Babies", "Toddlers", "Nursery", "Pre-K", "Elementary"]
 }
 
 def matches_team(pco_team_name: str, mapped_teams: list) -> bool:
