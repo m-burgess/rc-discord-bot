@@ -3,7 +3,7 @@ from src.domain.entities.headcount import Headcount
 from src.domain.use_cases.calculate_counts import CalculateCountsUseCase
 from src.domain.use_cases.process_checkin import ProcessCheckInUseCase
 from src.domain.use_cases.trigger_broadcast import TriggerBroadcastUseCase
-from src.domain.use_cases.reschedule_team import RescheduleTeamUseCase
+from src.domain.use_cases.get_plan_roster import GetPlanRosterUseCase
 
 # Dummy implementations of interfaces for testing
 

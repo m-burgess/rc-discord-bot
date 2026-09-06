@@ -6,7 +6,7 @@ from discord.ext import tasks, commands
 from discord import app_commands
 from src.infrastructure.planning_center.aio_client import PCOAsyncClient
 from src.infrastructure.security.config import config
-from src.domain.use_cases.reschedule_team import RescheduleTeamUseCase
+from src.domain.use_cases.get_plan_roster import GetPlanRosterUseCase
 from src.presentation.cogs.roster_cog import CHANNEL_TEAM_MAP, matches_team
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ class ReminderCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         pco_client = PCOAsyncClient(config.pco_app_id, config.pco_secret)
-        self.use_case = RescheduleTeamUseCase(pco_client)
+        self.use_case = GetPlanRosterUseCase(pco_client)
         # Start the background task loop
         self.check_reminders.start()
 
@@ -138,6 +138,52 @@ class ReminderCog(commands.Cog):
                         logger.warning(f"Guild {guild_id} not found when checking reminders.")
         except Exception as e:
             logger.error(f"Error checking reminders: {e}")
+            
+        # Check for automated pending DMs on Wednesday (2) and Friday (4) at 10:00 AM
+        if current_day in (2, 4) and current_hour == 10 and current_minute == 0:
+            try:
+                reminders = self.bot.db.get_all_reminders()
+                checked_combos = set()
+                for r in reminders:
+                    combo = (r["guild_id"], r["service_type_id"])
+                    if combo not in checked_combos:
+                        checked_combos.add(combo)
+                        guild = self.bot.get_guild(int(r["guild_id"]))
+                        if guild:
+                            self.bot.loop.create_task(self.send_pending_dms(guild, r["service_type_id"]))
+            except Exception as e:
+                logger.error(f"Error checking pending DMs: {e}")
+
+    async def send_pending_dms(self, guild: discord.Guild, service_type_id: str):
+        from src.presentation.views.roster_status_view import RosterStatusView
+        plans = await self.use_case.get_upcoming_plan_roster(service_type_id)
+        if not plans:
+            return
+
+        plan = plans[0]
+        detailed_teams = plan.get("detailed_teams", {})
+        if not detailed_teams:
+            return
+
+        member_map = {}
+        for member in guild.members:
+            member_map[member.display_name.lower()] = member
+            member_map[member.name.lower()] = member
+
+        for team_name, members in detailed_teams.items():
+            for m in members:
+                if m.get('status') == 'U':
+                    discord_member = member_map.get(m['name'].lower())
+                    if discord_member:
+                        try:
+                            view = RosterStatusView(self.pco_client, service_type_id, plan['id'], m['id'])
+                            msg = f"👋 Hi {m['name']}! You are scheduled for **{team_name}** on **{plan.get('date', 'Upcoming Service')}**.\n\nPlease confirm or decline your schedule."
+                            await discord_member.send(content=msg, view=view)
+                            logger.info(f"Sent pending DM to {m['name']} for {team_name}")
+                        except discord.Forbidden:
+                            logger.warning(f"Could not send DM to {m['name']}")
+                        except Exception as e:
+                            logger.error(f"Error sending DM to {m['name']}: {e}")
 
     @app_commands.command(name="test_reminder", description="Instantly trigger a schedule reminder broadcast for testing.")
     @app_commands.describe(service_type_id="Planning Center Service Type")

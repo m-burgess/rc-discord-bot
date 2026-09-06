@@ -219,6 +219,7 @@ class PCOAsyncClient(PlanningCenterAPI):
                         time_ids = [t.get("id") for t in rel.get("service_times", {}).get("data", [])]
                         
                         members.append({
+                            "id": item.get("id"),
                             "name": attrs.get("name", "Unknown Person"),
                             "position": attrs.get("team_position_name", "Unknown Position"),
                             "status": attrs.get("status", "U"),
@@ -229,10 +230,26 @@ class PCOAsyncClient(PlanningCenterAPI):
                     next_url = data.get("links", {}).get("next")
         return members
 
-    async def update_roster_status(self, plan_id: str, person_id: str, status: str) -> bool:
+    async def update_roster_status(self, service_type_id: str, plan_id: str, team_member_id: str, status: str) -> bool:
         if self.is_mock:
             return True
-        return False
+        
+        url = f"https://api.planningcenteronline.com/services/v2/service_types/{service_type_id}/plans/{plan_id}/team_members/{team_member_id}"
+        payload = {
+            "data": {
+                "type": "PlanPerson",
+                "attributes": {
+                    "status": status
+                }
+            }
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.patch(url, json=payload, auth=self._get_auth()) as response:
+                if response.status in (200, 204):
+                    return True
+                logger.error(f"Failed to update roster status: {response.status} {await response.text()}")
+                return False
 
     async def trigger_autoschedule(self, plan_id: str, team_id: str) -> List[Person]:
         if self.is_mock:

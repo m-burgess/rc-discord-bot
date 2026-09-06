@@ -5,7 +5,8 @@ from typing import List, Dict, Any
 from src.domain.interfaces.database_api import DatabaseAPI
 from src.domain.entities.headcount import Headcount, SeatingState
 
-DB_PATH = "rc_bot_data.db"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+DB_PATH = os.path.join(PROJECT_ROOT, "rc_bot_data.db")
 
 class SQLiteStateManager(DatabaseAPI):
     def __init__(self, db_path: str = DB_PATH):

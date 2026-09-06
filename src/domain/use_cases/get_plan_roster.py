@@ -2,7 +2,7 @@ from src.domain.interfaces.pco_api import PlanningCenterAPI
 from src.domain.entities.checkin import Person
 from typing import List, Dict, Any
 
-class RescheduleTeamUseCase:
+class GetPlanRosterUseCase:
     def __init__(self, pco_api: PlanningCenterAPI):
         self.pco_api = pco_api
 
@@ -41,14 +41,3 @@ class RescheduleTeamUseCase:
         
         return plans
 
-    async def auto_schedule_and_clean_roster(self, plan_id: str, team_id: str) -> List[Person]:
-        """
-        1. Query the upcoming plan and find any unconfirmed personnel
-        2. Decline/remove unconfirmed personnel to free up slots
-        3. Trigger PCO auto-schedule endpoint to fill slots
-        4. Return the newly drafted team roster
-        """
-        # For simplicity, we trigger the auto-schedule endpoint directly
-        # which performs the scheduling logic on the PCO side.
-        new_roster = await self.pco_api.trigger_autoschedule(plan_id, team_id)
-        return new_roster
