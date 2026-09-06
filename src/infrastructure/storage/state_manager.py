@@ -6,7 +6,7 @@ from src.domain.interfaces.database_api import DatabaseAPI
 from src.domain.entities.headcount import Headcount, SeatingState
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-DB_PATH = os.path.join(PROJECT_ROOT, "rc_bot_data.db")
+DB_PATH = os.getenv("DB_PATH", os.path.join(PROJECT_ROOT, "rc_bot_data.db"))
 
 class SQLiteStateManager(DatabaseAPI):
     def __init__(self, db_path: str = DB_PATH):
