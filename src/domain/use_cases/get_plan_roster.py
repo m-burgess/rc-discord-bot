@@ -14,7 +14,6 @@ class GetPlanRosterUseCase:
             return []
             
         # If we are past the plan's sort_date time, check the next plan instead
-        debug_msg = ""
         try:
             plan_date_str = plans[0].get("date", "")
             if plan_date_str and len(plans) > 1:
@@ -23,21 +22,13 @@ class GetPlanRosterUseCase:
                 plan_dt = plan_dt.replace(tzinfo=timezone.utc)
                 now = datetime.now(timezone.utc)
                 
-                debug_msg = f"[DEBUG: now={now.isoformat()} dt={plan_dt.isoformat()} pop={now >= plan_dt} len={len(plans)}]"
-                
                 # If current time is past the plan time, pop the plan
                 if now >= plan_dt:
                     plans.pop(0)
-            else:
-                debug_msg = f"[DEBUG: len={len(plans)} date_str='{plan_date_str}']"
         except Exception as e:
-            debug_msg = f"[DEBUG ERROR: {e}]"
             print(f"Error parsing date: {e}")
             
         first_plan = plans[0]
-        # Append debug message to title so it appears in Discord
-        first_plan["title"] = first_plan.get("title", "") + " " + debug_msg
-        
         plan_id = first_plan["id"]
         
         # Fetch detailed items and roster
