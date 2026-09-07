@@ -2,8 +2,7 @@ from src.domain.interfaces.pco_api import PlanningCenterAPI
 from src.domain.entities.checkin import Person
 from typing import List, Dict, Any
 
-from datetime import datetime
-import pytz
+from datetime import datetime, timezone
 
 class GetPlanRosterUseCase:
     def __init__(self, pco_api: PlanningCenterAPI):
@@ -19,15 +18,15 @@ class GetPlanRosterUseCase:
             plan_date_str = plans[0].get("date", "")
             if plan_date_str and len(plans) > 1:
                 # Parse the ISO 8601 date (replace Z with +00:00 for python's fromisoformat)
-                clean_date = plan_date_str.replace("Z", "+00:00")
-                plan_dt = datetime.fromisoformat(clean_date)
-                now = datetime.now(pytz.utc)
+                plan_dt = datetime.strptime(plan_date_str.replace("Z", ""), "%Y-%m-%dT%H:%M:%S")
+                plan_dt = plan_dt.replace(tzinfo=timezone.utc)
+                now = datetime.now(timezone.utc)
                 
                 # If current time is past the plan time, pop the plan
                 if now >= plan_dt:
                     plans.pop(0)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error parsing date: {e}")
             
         first_plan = plans[0]
         plan_id = first_plan["id"]
