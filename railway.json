@@ -3,6 +3,6 @@
     "builder": "nixpacks"
   },
   "deploy": {
-    "startCommand": "python src/main.py"
+    "startCommand": "if [ -f src/main.py ]; then python src/main.py; else python main.py; fi"
   }
 }
