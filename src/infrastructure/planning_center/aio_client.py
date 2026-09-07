@@ -280,6 +280,8 @@ class PCOAsyncClient(PlanningCenterAPI):
                     team_id = rels.get("team", {}).get("data", {}).get("id")
                     pos_id = rels.get("team_position", {}).get("data", {}).get("id")
                     
+                    time_id = rels.get("time", {}).get("data", {}).get("id")
+                    
                     team_name = team_map.get(team_id, "Unknown Team")
                     pos_name = pos_map.get(pos_id, "Unknown Position")
                     quantity = attrs.get("quantity", 1)
@@ -287,6 +289,7 @@ class PCOAsyncClient(PlanningCenterAPI):
                     needed.append({
                         "team_name": team_name,
                         "position_name": pos_name,
-                        "quantity": quantity
+                        "quantity": quantity,
+                        "time_id": time_id
                     })
         return needed

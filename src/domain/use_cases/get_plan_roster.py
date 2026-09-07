@@ -43,6 +43,13 @@ class GetPlanRosterUseCase:
         needed_by_team = {}
         for np in needed_positions_list:
             team_name = np["team_name"]
+            
+            time_id = np.get("time_id")
+            if time_id and time_id in plan_times:
+                np["times_str"] = plan_times[time_id]
+            else:
+                np["times_str"] = "Any Time"
+                
             if team_name not in needed_by_team:
                 needed_by_team[team_name] = []
             needed_by_team[team_name].append(np)

@@ -80,7 +80,11 @@ class TeamSelect(ui.Select):
             if team_needed:
                 needs_signup_button = True
                 for np in team_needed:
-                    lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
+                    times_str = np.get("times_str", "Any Time")
+                    if times_str == "Any Time":
+                        lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
+                    else:
+                        lines.append(f"- Needed: {np['quantity']}x {np['position_name']} - {times_str}")
                     
             lines.append("")
             
@@ -225,7 +229,11 @@ class RosterCog(commands.Cog):
                     if team_needed:
                         needs_signup_button = True
                         for np in team_needed:
-                            lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
+                            times_str = np.get("times_str", "Any Time")
+                            if times_str == "Any Time":
+                                lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
+                            else:
+                                lines.append(f"- Needed: {np['quantity']}x {np['position_name']} - {times_str}")
                             
                     lines.append("")
             show_dropdown = False
@@ -267,7 +275,11 @@ class RosterCog(commands.Cog):
                     if team_needed:
                         needs_signup_button = True
                         for np in team_needed:
-                            lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
+                            times_str = np.get("times_str", "Any Time")
+                            if times_str == "Any Time":
+                                lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
+                            else:
+                                lines.append(f"- Needed: {np['quantity']}x {np['position_name']} - {times_str}")
                             
                     lines.append("")
             show_dropdown = False
