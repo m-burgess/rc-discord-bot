@@ -18,8 +18,19 @@ class GetPlanRosterUseCase:
         items = await self.pco_api.get_plan_items(service_type_id, plan_id)
         plan_times = await self.pco_api.get_plan_times(service_type_id, plan_id)
         members = await self.pco_api.get_plan_team_members(service_type_id, plan_id)
+        needed_positions_list = await self.pco_api.get_needed_positions(service_type_id, plan_id)
         
         first_plan["items"] = items
+        
+        # Group needed positions by team
+        needed_by_team = {}
+        for np in needed_positions_list:
+            team_name = np["team_name"]
+            if team_name not in needed_by_team:
+                needed_by_team[team_name] = []
+            needed_by_team[team_name].append(np)
+            
+        first_plan["needed_positions"] = needed_by_team
         
         # Group members by team
         team_rosters = {}

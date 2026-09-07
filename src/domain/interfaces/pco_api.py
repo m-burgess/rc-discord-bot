@@ -41,3 +41,7 @@ class PlanningCenterAPI(Protocol):
     async def trigger_autoschedule(self, plan_id: str, team_id: str) -> List[Person]:
         """Auto-schedule members for unfilled slots and return new roster."""
         ...
+
+    async def get_needed_positions(self, service_type_id: str, plan_id: str) -> List[Dict[str, Any]]:
+        """Fetch needed positions for a plan."""
+        ...

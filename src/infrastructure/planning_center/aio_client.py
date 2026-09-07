@@ -255,3 +255,38 @@ class PCOAsyncClient(PlanningCenterAPI):
         if self.is_mock:
             return []
         return []
+
+    async def get_needed_positions(self, service_type_id: str, plan_id: str) -> List[Dict[str, Any]]:
+        if self.is_mock:
+            return []
+            
+        url = f"https://api.planningcenteronline.com/services/v2/service_types/{service_type_id}/plans/{plan_id}/needed_positions?include=team,team_position&per_page=100"
+        needed = []
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, auth=self._get_auth()) as response:
+                if response.status != 200:
+                    logger.error(f"PCO API error on get_needed_positions: {response.status}")
+                    return []
+                data = await response.json()
+                
+                included = data.get("included", [])
+                team_map = {item["id"]: item["attributes"].get("name", "Unknown Team") for item in included if item["type"] == "Team"}
+                pos_map = {item["id"]: item["attributes"].get("name", "Unknown Position") for item in included if item["type"] == "TeamPosition"}
+                
+                for item in data.get("data", []):
+                    attrs = item.get("attributes", {})
+                    rels = item.get("relationships", {})
+                    
+                    team_id = rels.get("team", {}).get("data", {}).get("id")
+                    pos_id = rels.get("team_position", {}).get("data", {}).get("id")
+                    
+                    team_name = team_map.get(team_id, "Unknown Team")
+                    pos_name = pos_map.get(pos_id, "Unknown Position")
+                    quantity = attrs.get("quantity", 1)
+                    
+                    needed.append({
+                        "team_name": team_name,
+                        "position_name": pos_name,
+                        "quantity": quantity
+                    })
+        return needed

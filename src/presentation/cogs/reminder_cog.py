@@ -65,42 +65,65 @@ class ReminderCog(commands.Cog):
                     lines.append(f"{idx}. {item}")
                 lines.append("")
 
+            needed_positions = plan.get("needed_positions", {})
+            all_team_names = set(detailed_teams.keys()) | set(needed_positions.keys())
+            
             has_teams_for_channel = False
-            for team_name, members in detailed_teams.items():
+            needs_signup_button = False
+            
+            for team_name in sorted(all_team_names):
                 if not matches_team(team_name, mapped_teams):
                     continue
                 
-                # Filter out declined members
+                members = detailed_teams.get(team_name, [])
                 active_members = [m for m in members if m.get('status', 'U') != 'D']
+                team_needed = needed_positions.get(team_name, [])
+                
                 if not active_members:
-                    continue
-
-                has_teams_for_channel = True
-                lines.append(f"👥 **{team_name}**")
-                for m in active_members:
-                    pco_name = m['name']
-                    status_code = m.get('status', 'U')
-                    status_str = status_map.get(status_code, "Pending")
-                    
-                    discord_id = member_map.get(pco_name.lower())
-                    if discord_id:
-                        tag = f"<@{discord_id}>"
-                    else:
-                        tag = pco_name
+                    if not team_needed:
+                        continue
+                    # Team is empty but has needed positions
+                    has_teams_for_channel = True
+                    needs_signup_button = True
+                    lines.append(f"👥 **{team_name}**")
+                    lines.append(f"⚠️ **NO ONE SCHEDULED**")
+                    for np in team_needed:
+                        lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
+                    lines.append("")
+                else:
+                    has_teams_for_channel = True
+                    lines.append(f"👥 **{team_name}**")
+                    for m in active_members:
+                        pco_name = m['name']
+                        status_code = m.get('status', 'U')
+                        status_str = status_map.get(status_code, "Pending")
                         
-                    times_str = m.get('times_str', 'Any Time')
-                    if times_str == "Any Time":
-                        lines.append(f"- {tag} ({status_str}) - {m['position']}")
-                    else:
-                        lines.append(f"- {tag} ({status_str}) - {m['position']} - {times_str}")
-                lines.append("")
+                        discord_id = member_map.get(pco_name.lower())
+                        if discord_id:
+                            tag = f"<@{discord_id}>"
+                        else:
+                            tag = pco_name
+                            
+                        times_str = m.get('times_str', 'Any Time')
+                        if times_str == "Any Time":
+                            lines.append(f"- {tag} ({status_str}) - {m['position']}")
+                        else:
+                            lines.append(f"- {tag} ({status_str}) - {m['position']} - {times_str}")
+                    lines.append("")
 
             if has_teams_for_channel:
                 msg = "\n".join(lines)
                 if len(msg) > 1900:
                     msg = msg[:1900] + "...\n(Message truncated due to length)"
                 try:
-                    await channel.send(msg)
+                    view = None
+                    if needs_signup_button:
+                        view = discord.ui.View()
+                        view.add_item(discord.ui.Button(
+                            label="Sign Up in Planning Center", 
+                            url=f"https://services.planningcenteronline.com/plans/{plan['id']}"
+                        ))
+                    await channel.send(msg, view=view)
                 except discord.Forbidden:
                     logger.warning(f"Missing permissions to send reminder to {channel.name}")
                 except Exception as e:
