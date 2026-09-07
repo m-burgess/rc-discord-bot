@@ -1,7 +1,7 @@
 import discord
 import logging
 from datetime import datetime
-import pytz
+from zoneinfo import ZoneInfo
 from discord.ext import tasks, commands
 from discord import app_commands
 from src.infrastructure.planning_center.aio_client import PCOAsyncClient
@@ -137,7 +137,7 @@ class ReminderCog(commands.Cog):
         await self.bot.wait_until_ready()
         
         # Get current time in US/Central
-        tz = pytz.timezone("US/Central")
+        tz = ZoneInfo("US/Central")
         now = datetime.now(tz)
         current_day = now.weekday()  # Monday is 0, Sunday is 6
         current_hour = now.hour
