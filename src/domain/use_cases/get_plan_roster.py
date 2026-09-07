@@ -2,6 +2,9 @@ from src.domain.interfaces.pco_api import PlanningCenterAPI
 from src.domain.entities.checkin import Person
 from typing import List, Dict, Any
 
+from datetime import datetime
+import pytz
+
 class GetPlanRosterUseCase:
     def __init__(self, pco_api: PlanningCenterAPI):
         self.pco_api = pco_api
@@ -10,6 +13,14 @@ class GetPlanRosterUseCase:
         plans = await self.pco_api.get_upcoming_plans(service_type_id)
         if not plans:
             return []
+            
+        # If the plan is happening today, check the next plan instead
+        tz = pytz.timezone("US/Central")
+        now = datetime.now(tz)
+        today_str = now.strftime("%Y-%m-%d")
+        
+        if plans[0].get("date") and plans[0]["date"].startswith(today_str) and len(plans) > 1:
+            plans.pop(0)
             
         first_plan = plans[0]
         plan_id = first_plan["id"]
