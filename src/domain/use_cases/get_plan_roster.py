@@ -14,13 +14,20 @@ class GetPlanRosterUseCase:
         if not plans:
             return []
             
-        # If the plan is happening today, check the next plan instead
-        tz = pytz.timezone("US/Central")
-        now = datetime.now(tz)
-        today_str = now.strftime("%Y-%m-%d")
-        
-        if plans[0].get("date") and plans[0]["date"].startswith(today_str) and len(plans) > 1:
-            plans.pop(0)
+        # If we are past the plan's sort_date time, check the next plan instead
+        try:
+            plan_date_str = plans[0].get("date", "")
+            if plan_date_str and len(plans) > 1:
+                # Parse the ISO 8601 date (replace Z with +00:00 for python's fromisoformat)
+                clean_date = plan_date_str.replace("Z", "+00:00")
+                plan_dt = datetime.fromisoformat(clean_date)
+                now = datetime.now(pytz.utc)
+                
+                # If current time is past the plan time, pop the plan
+                if now >= plan_dt:
+                    plans.pop(0)
+        except Exception:
+            pass
             
         first_plan = plans[0]
         plan_id = first_plan["id"]
