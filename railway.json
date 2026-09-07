@@ -3,6 +3,6 @@
     "builder": "nixpacks"
   },
   "deploy": {
-    "startCommand": "ls -la /app && python src/main.py"
+    "startCommand": "python src/main.py"
   }
 }
