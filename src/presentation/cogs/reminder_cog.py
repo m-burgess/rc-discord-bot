@@ -240,28 +240,24 @@ class ReminderCog(commands.Cog):
 
         lines = [f"⏰ **Office Manager Scheduled Roster**"]
         lines.append(f"📋 **Upcoming Plan: {plan['title']} ({plan.get('date', '')})**\n")
-        lines.append(f"🔎 **Filtered for: {target_time_str}**\n")
+        lines.append(f"🔎 **(All Service Times)**\n")
 
         all_team_names = set(detailed_teams.keys()) | set(needed_positions.keys())
         has_teams = False
 
         for team_name in sorted(all_team_names):
             members = detailed_teams.get(team_name, [])
-            # Filter members by time_str
+            # Include all members
             active_members = []
             for m in members:
                 if m.get('status', 'U') == 'D':
                     continue
-                times_str = m.get('times_str', 'Any Time')
-                if times_str == "Any Time" or target_time_str in times_str:
-                    active_members.append(m)
+                active_members.append(m)
 
-            # Filter needed positions by time
+            # Include all needed positions
             team_needed = []
             for np in needed_positions.get(team_name, []):
-                times_str = np.get('times_str', 'Any Time')
-                if times_str == "Any Time" or target_time_str in times_str:
-                    team_needed.append(np)
+                team_needed.append(np)
 
             if not active_members and not team_needed:
                 continue
