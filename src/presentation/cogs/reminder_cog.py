@@ -79,20 +79,15 @@ class ReminderCog(commands.Cog):
                 active_members = [m for m in members if m.get('status', 'U') != 'D']
                 team_needed = needed_positions.get(team_name, [])
                 
+                if not active_members and not team_needed:
+                    continue
+
+                has_teams_for_channel = True
+                lines.append(f"👥 **{team_name}**")
+                
                 if not active_members:
-                    if not team_needed:
-                        continue
-                    # Team is empty but has needed positions
-                    has_teams_for_channel = True
-                    needs_signup_button = True
-                    lines.append(f"👥 **{team_name}**")
                     lines.append(f"⚠️ **NO ONE SCHEDULED**")
-                    for np in team_needed:
-                        lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
-                    lines.append("")
                 else:
-                    has_teams_for_channel = True
-                    lines.append(f"👥 **{team_name}**")
                     for m in active_members:
                         pco_name = m['name']
                         status_code = m.get('status', 'U')
@@ -109,7 +104,13 @@ class ReminderCog(commands.Cog):
                             lines.append(f"- {tag} ({status_str}) - {m['position']}")
                         else:
                             lines.append(f"- {tag} ({status_str}) - {m['position']} - {times_str}")
-                    lines.append("")
+
+                if team_needed:
+                    needs_signup_button = True
+                    for np in team_needed:
+                        lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
+                        
+                lines.append("")
 
             if has_teams_for_channel:
                 msg = "\n".join(lines)

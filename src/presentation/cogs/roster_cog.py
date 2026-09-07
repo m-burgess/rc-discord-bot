@@ -52,17 +52,14 @@ class TeamSelect(ui.Select):
             active_members = [m for m in members if m.get('status', 'U') != 'D']
             team_needed = needed_positions.get(team_name, [])
             
+            if not active_members and not team_needed:
+                continue
+
+            lines.append(f"👥 **{team_name}**")
+            
             if not active_members:
-                if not team_needed:
-                    continue
-                needs_signup_button = True
-                lines.append(f"👥 **{team_name}**")
                 lines.append(f"⚠️ **NO ONE SCHEDULED**")
-                for np in team_needed:
-                    lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
-                lines.append("")
             else:
-                lines.append(f"👥 **{team_name}**")
                 for m in active_members:
                     pco_name = m['name']
                     status_code = m.get('status', 'U')
@@ -79,7 +76,13 @@ class TeamSelect(ui.Select):
                         lines.append(f"- {tag} ({status_str}) - {m['position']}")
                     else:
                         lines.append(f"- {tag} ({status_str}) - {m['position']} - {times_str}")
-                lines.append("")
+
+            if team_needed:
+                needs_signup_button = True
+                for np in team_needed:
+                    lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
+                    
+            lines.append("")
             
         msg = "\n".join(lines)
         if len(msg) > 1900:
@@ -194,17 +197,14 @@ class RosterCog(commands.Cog):
                     active_members = [m for m in members if m.get('status', 'U') != 'D']
                     team_needed = needed_positions.get(team_name, [])
                     
+                    if not active_members and not team_needed:
+                        continue
+                        
+                    lines.append(f"👥 **{team_name}**")
+                    
                     if not active_members:
-                        if not team_needed:
-                            continue
-                        needs_signup_button = True
-                        lines.append(f"👥 **{team_name}**")
                         lines.append(f"⚠️ **NO ONE SCHEDULED**")
-                        for np in team_needed:
-                            lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
-                        lines.append("")
                     else:
-                        lines.append(f"👥 **{team_name}**")
                         for m in active_members:
                             pco_name = m['name']
                             status_code = m.get('status', 'U')
@@ -221,7 +221,13 @@ class RosterCog(commands.Cog):
                                 lines.append(f"- {tag} ({status_str}) - {m['position']}")
                             else:
                                 lines.append(f"- {tag} ({status_str}) - {m['position']} - {times_str}")
-                        lines.append("")
+
+                    if team_needed:
+                        needs_signup_button = True
+                        for np in team_needed:
+                            lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
+                            
+                    lines.append("")
             show_dropdown = False
         elif team_filter:
             if all_team_names:
@@ -233,17 +239,14 @@ class RosterCog(commands.Cog):
                     active_members = [m for m in members if m.get('status', 'U') != 'D']
                     team_needed = needed_positions.get(team_name, [])
                     
+                    if not active_members and not team_needed:
+                        continue
+                        
+                    lines.append(f"👥 **{team_name}**")
+                    
                     if not active_members:
-                        if not team_needed:
-                            continue
-                        needs_signup_button = True
-                        lines.append(f"👥 **{team_name}**")
                         lines.append(f"⚠️ **NO ONE SCHEDULED**")
-                        for np in team_needed:
-                            lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
-                        lines.append("")
                     else:
-                        lines.append(f"👥 **{team_name}**")
                         for m in active_members:
                             pco_name = m['name']
                             status_code = m.get('status', 'U')
@@ -260,7 +263,13 @@ class RosterCog(commands.Cog):
                                 lines.append(f"- {tag} ({status_str}) - {m['position']}")
                             else:
                                 lines.append(f"- {tag} ({status_str}) - {m['position']} - {times_str}")
-                        lines.append("")
+
+                    if team_needed:
+                        needs_signup_button = True
+                        for np in team_needed:
+                            lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
+                            
+                    lines.append("")
             show_dropdown = False
         else:
             if all_team_names:
