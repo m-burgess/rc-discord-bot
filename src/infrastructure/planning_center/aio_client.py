@@ -277,10 +277,14 @@ class PCOAsyncClient(PlanningCenterAPI):
                     attrs = item.get("attributes", {})
                     rels = item.get("relationships", {})
                     
-                    team_id = rels.get("team", {}).get("data", {}).get("id")
-                    pos_id = rels.get("team_position", {}).get("data", {}).get("id")
+                    team_rel = rels.get("team") or {}
+                    team_id = (team_rel.get("data") or {}).get("id")
                     
-                    time_id = rels.get("time", {}).get("data", {}).get("id")
+                    pos_rel = rels.get("team_position") or {}
+                    pos_id = (pos_rel.get("data") or {}).get("id")
+                    
+                    time_rel = rels.get("time") or {}
+                    time_id = (time_rel.get("data") or {}).get("id")
                     
                     team_name = team_map.get(team_id, "Unknown Team")
                     pos_name = pos_map.get(pos_id, "Unknown Position")
