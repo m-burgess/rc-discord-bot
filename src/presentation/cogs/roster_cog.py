@@ -13,9 +13,18 @@ class TeamSelect(ui.Select):
         self.status_map = status_map
         
         options = []
-        for team_name, members in plan_data.get("detailed_teams", {}).items():
-            if not any(m.get("status", "U") != "D" for m in members):
+        detailed_teams = plan_data.get("detailed_teams", {})
+        needed_positions = plan_data.get("needed_positions", {})
+        all_teams = sorted(list(set(detailed_teams.keys()) | set(needed_positions.keys())))
+        
+        for team_name in all_teams:
+            members = detailed_teams.get(team_name, [])
+            team_needed = needed_positions.get(team_name, [])
+            has_active = any(m.get("status", "U") != "D" for m in members)
+            
+            if not has_active and not team_needed:
                 continue
+                
             if len(options) >= 25:
                 break
             options.append(discord.SelectOption(label=team_name, value=team_name))
@@ -33,36 +42,58 @@ class TeamSelect(ui.Select):
                 lines.append(f"{idx}. {item}")
             lines.append("")
         
-        for team_name, members in self.plan_data.get("detailed_teams", {}).items():
-            if team_name not in selected_teams:
-                continue
-                
+        detailed_teams = self.plan_data.get("detailed_teams", {})
+        needed_positions = self.plan_data.get("needed_positions", {})
+        
+        needs_signup_button = False
+        
+        for team_name in selected_teams:
+            members = detailed_teams.get(team_name, [])
             active_members = [m for m in members if m.get('status', 'U') != 'D']
+            team_needed = needed_positions.get(team_name, [])
+            
             if not active_members:
-                continue
-
-            lines.append(f"👥 **{team_name}**")
-            for m in active_members:
-                pco_name = m['name']
-                status_code = m.get('status', 'U')
-                status_str = self.status_map.get(status_code, "Pending")
-                
-                discord_id = self.member_map.get(pco_name.lower())
-                if discord_id:
-                    tag = f"<@{discord_id}>"
-                else:
-                    tag = pco_name
+                if not team_needed:
+                    continue
+                needs_signup_button = True
+                lines.append(f"👥 **{team_name}**")
+                lines.append(f"⚠️ **NO ONE SCHEDULED**")
+                for np in team_needed:
+                    lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
+                lines.append("")
+            else:
+                lines.append(f"👥 **{team_name}**")
+                for m in active_members:
+                    pco_name = m['name']
+                    status_code = m.get('status', 'U')
+                    status_str = self.status_map.get(status_code, "Pending")
                     
-                times_str = m.get('times_str', 'Any Time')
-                if times_str == "Any Time":
-                    lines.append(f"- {tag} ({status_str}) - {m['position']}")
-                else:
-                    lines.append(f"- {tag} ({status_str}) - {m['position']} - {times_str}")
-            lines.append("")
+                    discord_id = self.member_map.get(pco_name.lower())
+                    if discord_id:
+                        tag = f"<@{discord_id}>"
+                    else:
+                        tag = pco_name
+                        
+                    times_str = m.get('times_str', 'Any Time')
+                    if times_str == "Any Time":
+                        lines.append(f"- {tag} ({status_str}) - {m['position']}")
+                    else:
+                        lines.append(f"- {tag} ({status_str}) - {m['position']} - {times_str}")
+                lines.append("")
             
         msg = "\n".join(lines)
         if len(msg) > 1900:
             msg = msg[:1900] + "...\n(Message truncated due to length)"
+            
+        # Rebuild view to keep dropdown, and add a signup button if needed
+        self.view.clear_items()
+        self.view.add_item(self) # add the dropdown back
+        if needs_signup_button:
+            self.view.add_item(discord.ui.Button(
+                label="Sign Up in Planning Center", 
+                url=f"https://services.planningcenteronline.com/plans/{self.plan_data['id']}",
+                row=1
+            ))
             
         await interaction.response.edit_message(content=msg, view=self.view)
 
@@ -149,66 +180,90 @@ class RosterCog(commands.Cog):
 
         show_dropdown = True
 
+        needed_positions = plan.get("needed_positions", {})
+        all_team_names = set(detailed_teams.keys()) | set(needed_positions.keys())
+        needs_signup_button = False
+        
         if mapped_teams:
-            if detailed_teams:
-                for team_name, members in detailed_teams.items():
+            if all_team_names:
+                for team_name in sorted(all_team_names):
                     if not matches_team(team_name, mapped_teams):
                         continue
                     
+                    members = detailed_teams.get(team_name, [])
                     active_members = [m for m in members if m.get('status', 'U') != 'D']
+                    team_needed = needed_positions.get(team_name, [])
+                    
                     if not active_members:
-                        continue
-
-                    lines.append(f"👥 **{team_name}**")
-                    for m in active_members:
-                        pco_name = m['name']
-                        status_code = m.get('status', 'U')
-                        status_str = status_map.get(status_code, "Pending")
-                        
-                        discord_id = member_map.get(pco_name.lower())
-                        if discord_id:
-                            tag = f"<@{discord_id}>"
-                        else:
-                            tag = pco_name
+                        if not team_needed:
+                            continue
+                        needs_signup_button = True
+                        lines.append(f"👥 **{team_name}**")
+                        lines.append(f"⚠️ **NO ONE SCHEDULED**")
+                        for np in team_needed:
+                            lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
+                        lines.append("")
+                    else:
+                        lines.append(f"👥 **{team_name}**")
+                        for m in active_members:
+                            pco_name = m['name']
+                            status_code = m.get('status', 'U')
+                            status_str = status_map.get(status_code, "Pending")
                             
-                        times_str = m.get('times_str', 'Any Time')
-                        if times_str == "Any Time":
-                            lines.append(f"- {tag} ({status_str}) - {m['position']}")
-                        else:
-                            lines.append(f"- {tag} ({status_str}) - {m['position']} - {times_str}")
-                    lines.append("")
+                            discord_id = member_map.get(pco_name.lower())
+                            if discord_id:
+                                tag = f"<@{discord_id}>"
+                            else:
+                                tag = pco_name
+                                
+                            times_str = m.get('times_str', 'Any Time')
+                            if times_str == "Any Time":
+                                lines.append(f"- {tag} ({status_str}) - {m['position']}")
+                            else:
+                                lines.append(f"- {tag} ({status_str}) - {m['position']} - {times_str}")
+                        lines.append("")
             show_dropdown = False
         elif team_filter:
-            if detailed_teams:
-                for team_name, members in detailed_teams.items():
+            if all_team_names:
+                for team_name in sorted(all_team_names):
                     if team_filter.lower() not in team_name.lower():
                         continue
 
+                    members = detailed_teams.get(team_name, [])
                     active_members = [m for m in members if m.get('status', 'U') != 'D']
+                    team_needed = needed_positions.get(team_name, [])
+                    
                     if not active_members:
-                        continue
-
-                    lines.append(f"👥 **{team_name}**")
-                    for m in active_members:
-                        pco_name = m['name']
-                        status_code = m.get('status', 'U')
-                        status_str = status_map.get(status_code, "Pending")
-                        
-                        discord_id = member_map.get(pco_name.lower())
-                        if discord_id:
-                            tag = f"<@{discord_id}>"
-                        else:
-                            tag = pco_name
+                        if not team_needed:
+                            continue
+                        needs_signup_button = True
+                        lines.append(f"👥 **{team_name}**")
+                        lines.append(f"⚠️ **NO ONE SCHEDULED**")
+                        for np in team_needed:
+                            lines.append(f"- Needed: {np['quantity']}x {np['position_name']}")
+                        lines.append("")
+                    else:
+                        lines.append(f"👥 **{team_name}**")
+                        for m in active_members:
+                            pco_name = m['name']
+                            status_code = m.get('status', 'U')
+                            status_str = status_map.get(status_code, "Pending")
                             
-                        times_str = m.get('times_str', 'Any Time')
-                        if times_str == "Any Time":
-                            lines.append(f"- {tag} ({status_str}) - {m['position']}")
-                        else:
-                            lines.append(f"- {tag} ({status_str}) - {m['position']} - {times_str}")
-                    lines.append("")
+                            discord_id = member_map.get(pco_name.lower())
+                            if discord_id:
+                                tag = f"<@{discord_id}>"
+                            else:
+                                tag = pco_name
+                                
+                            times_str = m.get('times_str', 'Any Time')
+                            if times_str == "Any Time":
+                                lines.append(f"- {tag} ({status_str}) - {m['position']}")
+                            else:
+                                lines.append(f"- {tag} ({status_str}) - {m['position']} - {times_str}")
+                        lines.append("")
             show_dropdown = False
         else:
-            if detailed_teams:
+            if all_team_names:
                 lines.append("👇 **Please select the teams you want to view from the dropdown below.**")
                 
         msg = "\n".join(lines)
@@ -219,7 +274,17 @@ class RosterCog(commands.Cog):
             view = TeamFilterView(plan, member_map, status_map)
             await interaction.followup.send(msg, view=view)
         else:
-            await interaction.followup.send(msg)
+            view = None
+            if needs_signup_button:
+                view = discord.ui.View()
+                view.add_item(discord.ui.Button(
+                    label="Sign Up in Planning Center", 
+                    url=f"https://services.planningcenteronline.com/plans/{plan['id']}"
+                ))
+            if view:
+                await interaction.followup.send(msg, view=view)
+            else:
+                await interaction.followup.send(msg)
 
     # Autocomplete handler for teams
     async def team_autocomplete(self, interaction: discord.Interaction, current: str):
