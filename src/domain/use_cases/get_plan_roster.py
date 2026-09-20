@@ -18,14 +18,19 @@ class GetPlanRosterUseCase:
             plan_date_str = plans[0].get("date", "")
             if plan_date_str and len(plans) > 1:
                 from datetime import timedelta
+                from zoneinfo import ZoneInfo
+                
                 # Parse the ISO 8601 date (replace Z with +00:00 for python's fromisoformat)
                 plan_dt = datetime.strptime(plan_date_str.replace("Z", ""), "%Y-%m-%dT%H:%M:%S")
                 plan_dt = plan_dt.replace(tzinfo=timezone.utc)
                 now = datetime.now(timezone.utc)
+                now_central = datetime.now(ZoneInfo("US/Central"))
                 
-                # If current time is past the plan time + 24 hours, pop the plan
-                if now >= plan_dt + timedelta(days=1):
-                    plans.pop(0)
+                # Never pop the plan on Saturday (5) or Sunday (6).
+                # On weekdays, pop it if the plan time has passed.
+                if now_central.weekday() not in (5, 6):
+                    if now >= plan_dt:
+                        plans.pop(0)
         except Exception as e:
             print(f"Error parsing date: {e}")
             
