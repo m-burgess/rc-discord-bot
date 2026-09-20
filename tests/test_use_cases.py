@@ -1,3 +1,4 @@
+import pytest
 from datetime import datetime
 from src.domain.entities.headcount import Headcount
 from src.domain.use_cases.calculate_counts import CalculateCountsUseCase
@@ -69,6 +70,7 @@ def test_calculate_counts():
     reset_counts = use_case.reset_headcount()
     assert reset_counts.sanctuary_count == 0
 
+@pytest.mark.asyncio
 async def test_process_checkin():
     pco = MockPCO()
     use_case = ProcessCheckInUseCase(pco)
@@ -79,9 +81,11 @@ async def test_process_checkin():
     checkout_ok = await use_case.execute_checkout("ci-789")
     assert checkout_ok is True
 
+@pytest.mark.asyncio
 async def test_trigger_broadcast():
     hw = MockHardware()
     use_case = TriggerBroadcastUseCase(hw)
     
     success = await use_case.execute_start_broadcast()
     assert success is True
+

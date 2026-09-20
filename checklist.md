@@ -16,6 +16,7 @@
 - [x] Implement auto-reschedule slash commands for absent team members
 - [x] Automated weekly schedule reminders with persistence and channel team mapping
 - [x] Planning Center People household form integration (`/household_form`)
+- [x] Planning Center Wednesday/Thursday afternoon song checker & auto YouTube link insertion (`/check_upcoming_songs`)
 
 ## Phase 3: Hardware Integration
 - [ ] Connect and test Behringer WING integration over local network

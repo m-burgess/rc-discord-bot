@@ -62,7 +62,8 @@ class RCBot(commands.Bot):
             "src.presentation.cogs.roster_cog",
             "src.presentation.cogs.event_cog",
             "src.presentation.cogs.hardware_cog",
-            "src.presentation.cogs.reminder_cog"
+            "src.presentation.cogs.reminder_cog",
+            "src.presentation.cogs.song_cog"
         ]
         for cog in cogs:
             try:

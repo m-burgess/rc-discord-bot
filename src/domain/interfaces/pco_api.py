@@ -45,3 +45,16 @@ class PlanningCenterAPI(Protocol):
     async def get_needed_positions(self, service_type_id: str, plan_id: str) -> List[Dict[str, Any]]:
         """Fetch needed positions for a plan."""
         ...
+
+    async def get_plan_items_detailed(self, service_type_id: str, plan_id: str) -> List[Dict[str, Any]]:
+        """Fetch detailed plan items including linked song/arrangement IDs."""
+        ...
+
+    async def get_song_details(self, song_id: str) -> Dict[str, Any]:
+        """Fetch details for a specific song including artist, title, links, and PDFs."""
+        ...
+
+    async def add_youtube_link_to_song(self, song_id: str, youtube_url: str, arrangement_id: Optional[str] = None) -> bool:
+        """Add a YouTube link to a song or arrangement in Planning Center."""
+        ...
+
