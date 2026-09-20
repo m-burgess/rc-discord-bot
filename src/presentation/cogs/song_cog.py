@@ -123,7 +123,7 @@ class SongCog(commands.Cog):
 
     @app_commands.command(
         name="check_upcoming_songs",
-        description="Check upcoming Planning Center service items for linked songs, grab links/PDFs, and auto-add missing YouTube links."
+        description="Audit upcoming PCO service songs, retrieve links/PDFs, and auto-add YouTube links."
     )
     @app_commands.describe(service_type_id="Select Planning Center Service Type")
     @app_commands.choices(service_type_id=[
